@@ -10,7 +10,7 @@ python solution.py
 
 Additional requirements:
 
-- nltk tokenizer 'punkt'
+- nltk tokenizer 'punkt_tab'
 - nltk pos-tagger 'averaged_perceptron_tagger_eng'
 
 They are downloaded directly in code

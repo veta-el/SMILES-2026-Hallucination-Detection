@@ -1,5 +1,5 @@
 """
-aggregation.py — Token aggregation strategy and feature extraction
+aggregation.py вЂ” Token aggregation strategy and feature extraction
                (student-implemented).
 
 Converts per-token, per-layer hidden states from the extraction loop in
@@ -7,8 +7,8 @@ Converts per-token, per-layer hidden states from the extraction loop in
 
 Two stages can be customised independently:
 
-  1. ``aggregate`` — select layers and token positions, pool into a vector.
-  2. ``extract_geometric_features`` — optional hand-crafted features
+  1. ``aggregate`` вЂ” select layers and token positions, pool into a vector.
+  2. ``extract_geometric_features`` вЂ” optional hand-crafted features
      (enabled by setting ``USE_GEOMETRIC = True`` in ``solution.py``).
 
 Both stages are combined by ``aggregation_and_feature_extraction``, the
@@ -18,49 +18,11 @@ single entry point called from the notebook.
 from __future__ import annotations
 
 import torch
-
-
-def aggregate(
-    hidden_states: torch.Tensor,
-    attention_mask: torch.Tensor,
-) -> torch.Tensor:
-    """Convert per-token hidden states into a single feature vector.
-
-    Args:
-        hidden_states:  Tensor of shape ``(n_layers, seq_len, hidden_dim)``.
-                        Layer index 0 is the token embedding; index -1 is the
-                        final transformer layer.
-        attention_mask: 1-D tensor of shape ``(seq_len,)`` with 1 for real
-                        tokens and 0 for padding.
-
-    Returns:
-        A 1-D feature tensor of shape ``(hidden_dim,)`` or
-        ``(k * hidden_dim,)`` if multiple layers are concatenated.
-
-    Student task:
-        Replace or extend the skeleton below with alternative layer selection,
-        token pooling (mean, max, weighted), or multi-layer fusion strategies.
-    """
-    # ------------------------------------------------------------------
-    # STUDENT: Replace or extend the aggregation below.
-    # ------------------------------------------------------------------
-
-    # Default: last real token of the final transformer layer.
-    layer = hidden_states[-1]          # (seq_len, hidden_dim)
-
-    # Find the index of the last real (non-padding) token.
-    real_positions = attention_mask.nonzero(as_tuple=False)  # (n_real, 1)
-    last_pos = int(real_positions[-1].item())                 # scalar index
-
-    feature = layer[last_pos]          # (hidden_dim,)
-
-    return feature
-    # ------------------------------------------------------------------
-
+from scipy.spatial import distance
 
 def extract_geometric_features(
     hidden_states: torch.Tensor,
-    attention_mask: torch.Tensor,
+    token_response_start: int,
 ) -> torch.Tensor:
     """Extract hand-crafted geometric / statistical features from hidden states.
 
@@ -81,18 +43,30 @@ def extract_geometric_features(
         norms, inter-layer cosine similarity (representation drift), or
         sequence length.
     """
-    # ------------------------------------------------------------------
-    # STUDENT: Replace or extend the geometric feature extraction below.
-    # ------------------------------------------------------------------
+    distances = []
+    # Getting distances for each layer for sum-vectors of prompt important tokens and response important tokens
+    for l in range (1, hidden_states.shape[0]):
+        layer = hidden_states [l]
 
-    # Placeholder: returns an empty tensor (no geometric features).
-    return torch.zeros(0)
+        if layer.shape[0] == 2:
+            prompt_feature = layer[0]
+            response_feature = layer[1]
+        else:
+            prompt_layer = layer[:token_response_start, :]
+            response_layer = layer[token_response_start:, :]
+
+            prompt_feature = prompt_layer.sum(dim=0)
+            response_feature = response_layer.sum(dim=0)
+
+        cos_distance = distance.cosine(prompt_feature, response_feature)
+        distances.append(cos_distance)
+    return torch.tensor (distances)
 
 
 def aggregation_and_feature_extraction(
     hidden_states: torch.Tensor,
     attention_mask: torch.Tensor,
-    use_geometric: bool = False,
+    token_response_start: int,
 ) -> torch.Tensor:
     """Aggregate hidden states and optionally append geometric features.
 
@@ -113,10 +87,8 @@ def aggregation_and_feature_extraction(
         ``feature_dim = hidden_dim`` (or larger for multi-layer or geometric
         concatenations).
     """
-    agg_features = aggregate(hidden_states, attention_mask)  # (feature_dim,)
+    hidden_states = hidden_states.to(torch.device('cpu'))
+    # Use only geometric features
+    features = extract_geometric_features(hidden_states, token_response_start)
 
-    if use_geometric:
-        geo_features = extract_geometric_features(hidden_states, attention_mask)
-        return torch.cat([agg_features, geo_features], dim=0)
-
-    return agg_features
+    return features

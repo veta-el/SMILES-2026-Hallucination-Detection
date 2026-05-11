@@ -1,5 +1,5 @@
 """
-probe.py — Hallucination probe classifier (student-implemented).
+probe.py вЂ” Hallucination probe classifier (student-implemented).
 
 Implements ``HallucinationProbe``, a binary MLP that classifies feature
 vectors as truthful (0) or hallucinated (1).  Called from ``solution.py``
@@ -43,15 +43,17 @@ class HallucinationProbe(nn.Module):
             input_dim: Feature vector dimensionality.
         """
         self._net = nn.Sequential(
-            nn.Linear(input_dim, 256),
-            nn.ReLU(),
-            nn.Linear(256, 1),
+            nn.Linear(input_dim, 128),
+            nn.ELU(),
+            nn.Linear(128, 64),
+            nn.Dropout(p=0.2),
+            nn.Linear(64, 1),
         )
 
     # ------------------------------------------------------------------
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass — returns raw logits of shape ``(n_samples,)``.
+        """Forward pass вЂ” returns raw logits of shape ``(n_samples,)``.
 
         Args:
             x: Float tensor of shape ``(n_samples, feature_dim)``.
@@ -98,7 +100,7 @@ class HallucinationProbe(nn.Module):
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
 
         self.train()
-        for _ in range(200):
+        for _ in range(100):
             optimizer.zero_grad()
             logits = self(X_t)
             loss = criterion(logits, y_t)
@@ -175,4 +177,3 @@ class HallucinationProbe(nn.Module):
             logits = self(X_t)
             prob_pos = torch.sigmoid(logits).numpy()
         return np.stack([1.0 - prob_pos, prob_pos], axis=1)
-

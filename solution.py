@@ -220,7 +220,7 @@ if __name__=='__main__':
     model.to(device)
 
     # Get important tokens ids
-    nltk.download('punkt')
+    nltk.download('punkt_tab')
     nltk.download('averaged_perceptron_tagger_eng')
     print ('Defining important tokens...')
     important_tokens_ids = define_important_tokens (all_texts, tokenizer)

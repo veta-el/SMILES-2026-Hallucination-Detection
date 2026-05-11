@@ -1,5 +1,5 @@
 """
-aggregation.py вЂ” Token aggregation strategy and feature extraction
+aggregation.py — Token aggregation strategy and feature extraction
                (student-implemented).
 
 Converts per-token, per-layer hidden states from the extraction loop in
@@ -7,8 +7,8 @@ Converts per-token, per-layer hidden states from the extraction loop in
 
 Two stages can be customised independently:
 
-  1. ``aggregate`` вЂ” select layers and token positions, pool into a vector.
-  2. ``extract_geometric_features`` вЂ” optional hand-crafted features
+  1. ``aggregate`` — select layers and token positions, pool into a vector.
+  2. ``extract_geometric_features`` — optional hand-crafted features
      (enabled by setting ``USE_GEOMETRIC = True`` in ``solution.py``).
 
 Both stages are combined by ``aggregation_and_feature_extraction``, the
@@ -92,3 +92,4 @@ def aggregation_and_feature_extraction(
     features = extract_geometric_features(hidden_states, token_response_start)
 
     return features
+
